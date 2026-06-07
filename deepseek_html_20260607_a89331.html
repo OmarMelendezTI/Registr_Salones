@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>Registro de Salones - Generador y Lector QR con Historial</title>
+    <!-- Librerías -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f0f4fa 0%, #d9e2ef 100%);
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px 16px 40px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .app-container {
+            max-width: 750px;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 48px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 5px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0f2b4d, #1a4a7a);
+            padding: 1.5rem 1.5rem 1.8rem;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.85;
+        }
+
+        .content {
+            padding: 1.8rem 1.5rem 2rem;
+        }
+
+        .section-title {
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: #0f2b4d;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 5px solid #2a7faa;
+            padding-left: 12px;
+        }
+
+        .qr-generator, .qr-reader, .history-section {
+            background: #ffffff;
+            border-radius: 32px;
+            padding: 1.2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        #textoQR {
+            flex: 1;
+            padding: 14px 18px;
+            border-radius: 60px;
+            border: 1.5px solid #cddae9;
+            font-size: 1rem;
+            font-family: inherit;
+            background: white;
+        }
+
+        #textoQR:focus {
+            outline: none;
+            border-color: #2a7faa;
+            box-shadow: 0 0 0 3px rgba(42, 127, 170, 0.2);
+        }
+
+        .btn-primary {
+            background: #1e6f5c;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 60px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn-primary:hover {
+            background: #0e5a48;
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #2c3e66;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 60px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #2a7faa;
+            color: #1e5a6e;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .qr-preview {
+            text-align: center;
+            margin: 20px 0 15px;
+            padding: 15px;
+            background: #fafcff;
+            border-radius: 28px;
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin: 10px auto;
+        }
+
+        #qrcode img, #qrcode canvas {
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            background: white;
+            padding: 8px;
+        }
+
+        .flex-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 15px 0 10px;
+            justify-content: center;
+        }
+
+        .camera-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .cam-btn {
+            background: #eef2f7;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .cam-btn.active {
+            background: #2a7faa;
+            color: white;
+        }
+
+        .reader-area {
+            margin-top: 15px;
+        }
+
+        #reader {
+            width: 100%;
+            border-radius: 28px;
+            overflow: hidden;
+            min-height: 280px;
+            background: #f0f2f5;
+        }
+
+        .result-card {
+            background: #eef3fc;
+            border-radius: 28px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .result-title {
+            font-weight: 700;
+            color: #0f4c5f;
+            margin-bottom: 8px;
+        }
+
+        #lecturaResultado {
+            font-family: monospace;
+            background: white;
+            padding: 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+
+        /* Historial de salones */
+        .history-list {
+            max-height: 280px;
+            overflow-y: auto;
+            border-radius: 24px;
+        }
+
+        .history-item {
+            background: #f8fafd;
+            border-radius: 20px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #2a7faa;
+            transition: 0.1s;
+        }
+
+        .history-item .info {
+            flex: 1;
+        }
+
+        .history-item .salon-text {
+            font-weight: 600;
+            color: #1e4663;
+            word-break: break-word;
+        }
+
+        .history-item .timestamp {
+            font-size: 0.7rem;
+            color: #6c86a3;
+            margin-top: 4px;
+        }
+
+        .history-item .btn-reutilizar {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 30px;
+            transition: 0.1s;
+        }
+
+        .btn-clear {
+            background: #d9534f;
+            margin-top: 12px;
+            width: 100%;
+        }
+
+        .small-note {
+            font-size: 0.75rem;
+            color: #5c6f87;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .file-upload-area {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ccc;
+        }
+
+        @media (max-width: 550px) {
+            .content {
+                padding: 1.2rem;
+            }
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            .history-item {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="header">
+        <h1>📚 Registro de Salones</h1>
+        <p>Genera QR · Escanea con cámara o imagen · Historial</p>
+    </div>
+
+    <div class="content">
+        <!-- GENERADOR QR -->
+        <div class="qr-generator">
+            <div class="section-title">✨ Generar código QR</div>
+            <div class="input-group">
+                <label>🔖 Texto o ID del salón:</label>
+                <div class="input-wrapper">
+                    <input type="text" id="textoQR" placeholder="Ej: Salón 301 - Matemáticas" value="Salón 101 - Registro">
+                    <button id="btnGenerar" class="btn-primary">🔘 Generar QR</button>
+                </div>
+            </div>
+            <div class="qr-preview">
+                <div id="qrcode"></div>
+                <button id="btnDescargar" class="btn-secondary">📲 Descargar QR (PNG)</button>
+            </div>
+        </div>
+
+        <!-- LECTOR QR CON CÁMARA + SELECCION MANUAL -->
+        <div class="qr-reader">
+            <div class="section-title">📷 Escanear código QR</div>
+            <div class="camera-selector">
+                <button id="camRearBtn" class="cam-btn active">📱 Cámara Trasera</button>
+                <button id="camFrontBtn" class="cam-btn">🤳 Cámara Frontal</button>
+            </div>
+            <div class="reader-area">
+                <div id="reader"></div>
+                <div class="flex-buttons">
+                    <button id="btnIniciarCamara" class="btn-primary">▶️ Iniciar cámara</button>
+                    <button id="btnDetenerCamara" class="btn-secondary">⏹️ Detener cámara</button>
+                </div>
+                
+                <!-- Fallback: subir imagen -->
+                <div class="file-upload-area">
+                    <label style="display: block; text-align: center; margin-bottom: 8px; font-size: 0.85rem;">🖼️ O escanea desde una imagen:</label>
+                    <input type="file" id="fileInput" accept="image/*" style="width: 100%; padding: 8px; border-radius: 12px; border: 1px solid #ccc;">
+                </div>
+
+                <div class="result-card">
+                    <div class="result-title">📌 Último código escaneado:</div>
+                    <div id="lecturaResultado">— Ninguno aún —</div>
+                </div>
+                <div class="small-note">
+                    💡 <strong>Para móvil:</strong> Si la cámara no abre, prueba seleccionando "Frontal" o "Trasera".  
+                    Asegúrate de dar permiso y usar HTTPS (o localhost). En iOS, la cámara funciona perfectamente con este método.
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTORIAL DE SALONES ESCANEADOS -->
+        <div class="history-section">
+            <div class="section-title">📋 Historial de salones escaneados</div>
+            <div id="historyList" class="history-list">
+                <div style="text-align: center; color: #8ba0bc; padding: 20px;">Aún no hay escaneos. Escanea un código QR.</div>
+            </div>
+            <button id="clearHistoryBtn" class="btn-secondary btn-clear">🗑️ Limpiar historial</button>
+        </div>
+    </div>
+    <div class="footer" style="font-size: 0.7rem; text-align: center; padding: 1rem; color: #6c7e97; border-top: 1px solid #e2e8f0;">
+        Sistema Registro Salones · Guarda localmente los últimos 50 escaneos
+    </div>
+</div>
+
+<script>
+    // ---------- VARIABLES GLOBALES ----------
+    let currentQRCode = null;
+    let html5QrCode = null;
+    let isScanning = false;
+    let currentCameraMode = "environment"; // 'environment' = trasera, 'user' = frontal
+    
+    // Historial: array de objetos { text, timestamp, id }
+    let scanHistory = [];
+    
+    // Clave para localStorage
+    const STORAGE_KEY = "salones_scan_history";
+    
+    // Elementos DOM
+    const textoInput = document.getElementById('textoQR');
+    const btnGenerar = document.getElementById('btnGenerar');
+    const qrcodeContainer = document.getElementById('qrcode');
+    const btnDescargar = document.getElementById('btnDescargar');
+    const btnIniciarCamara = document.getElementById('btnIniciarCamara');
+    const btnDetenerCamara = document.getElementById('btnDetenerCamara');
+    const lecturaResultado = document.getElementById('lecturaResultado');
+    const fileInput = document.getElementById('fileInput');
+    const historyContainer = document.getElementById('historyList');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const camRearBtn = document.getElementById('camRearBtn');
+    const camFrontBtn = document.getElementById('camFrontBtn');
+    
+    // ---------- CARGAR HISTORIAL DESDE LOCALSTORAGE ----------
+    function loadHistory() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try {
+                scanHistory = JSON.parse(stored);
+                if (!Array.isArray(scanHistory)) scanHistory = [];
+            } catch(e) { scanHistory = []; }
+        }
+        // Limitar a 50 elementos
+        if (scanHistory.length > 50) scanHistory = scanHistory.slice(0, 50);
+        renderHistory();
+    }
+    
+    // Guardar historial
+    function saveHistory() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(scanHistory.slice(0, 50)));
+    }
+    
+    // Agregar un nuevo escaneo (evitar duplicados consecutivos? se permite igual pero muestra)
+    function addToHistory(salonText) {
+        if (!salonText || salonText.trim() === "") return;
+        const newEntry = {
+            text: salonText.trim(),
+            timestamp: new Date().toLocaleString(),
+            id: Date.now() + Math.random().toString(36)
+        };
+        // Insertar al inicio (más reciente primero)
+        scanHistory.unshift(newEntry);
+        if (scanHistory.length > 50) scanHistory.pop();
+        saveHistory();
+        renderHistory();
+    }
+    
+    // Eliminar del historial por id
+    function removeFromHistory(id) {
+        scanHistory = scanHistory.filter(item => item.id != id);
+        saveHistory();
+        renderHistory();
+    }
+    
+    // Limpiar todo
+    function clearHistory() {
+        if (confirm("¿Borrar todo el historial de salones escaneados?")) {
+            scanHistory = [];
+            saveHistory();
+            renderHistory();
+        }
+    }
+    
+    // Reutilizar un salon en el generador (click en el botón)
+    function reuseSalon(text) {
+        textoInput.value = text;
+        generarQR(text);
+        // Scroll suave al generador
+        document.querySelector('.qr-generator').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // Renderizar lista de historial
+    function renderHistory() {
+        if (!historyContainer) return;
+        if (scanHistory.length === 0) {
+            historyContainer.innerHTML = '<div style="text-align: center; color: #8ba0bc; padding: 20px;">📭 No hay salones escaneados aún. Escanea un código QR.</div>';
+            return;
+        }
+        let html = '';
+        scanHistory.forEach(item => {
+            html += `
+                <div class="history-item">
+                    <div class="info">
+                        <div class="salon-text">🏫 ${escapeHtml(item.text)}</div>
+                        <div class="timestamp">🕒 ${item.timestamp}</div>
+                    </div>
+                    <button class="btn-reutilizar" data-text="${escapeHtml(item.text)}" data-id="${item.id}" title="Usar este texto para generar QR">📋</button>
+                    <button class="btn-reutilizar" data-remove="${item.id}" title="Eliminar del historial" style="color:#c0392b;">🗑️</button>
+                </div>
+            `;
+        });
+        historyContainer.innerHTML = html;
+        
+        // Agregar event listeners a los botones de reutilizar y eliminar
+        document.querySelectorAll('.btn-reutilizar').forEach(btn => {
+            if (btn.hasAttribute('data-text')) {
+                const text = btn.getAttribute('data-text');
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    reuseSalon(text);
+                });
+            } else if (btn.hasAttribute('data-remove')) {
+                const id = btn.getAttribute('data-remove');
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeFromHistory(id);
+                });
+            }
+        });
+    }
+    
+    // Helper para evitar XSS
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // ---------- FUNCIONES QR ----------
+    function generarQR(texto) {
+        if (!texto || texto.trim() === "") {
+            alert("⚠️ Ingresa el texto o ID del salón.");
+            return false;
+        }
+        qrcodeContainer.innerHTML = "";
+        try {
+            const containerWidth = qrcodeContainer.clientWidth;
+            let qrSize = Math.min(containerWidth - 20, 240);
+            if (qrSize < 150) qrSize = 180;
+            currentQRCode = new QRCode(qrcodeContainer, {
+                text: texto,
+                width: qrSize,
+                height: qrSize,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            return true;
+        } catch (error) {
+            alert("Error al generar el QR.");
+            return false;
+        }
+    }
+    
+    function descargarQR() {
+        const qrElement = qrcodeContainer.querySelector('canvas, img');
+        if (!qrElement) {
+            alert("❌ No hay QR generado.");
+            return;
+        }
+        let url = null;
+        if (qrElement.tagName === 'CANVAS') {
+            url = qrElement.toDataURL('image/png');
+        } else if (qrElement.tagName === 'IMG') {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = qrElement.width;
+            tempCanvas.height = qrElement.height;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.drawImage(qrElement, 0, 0);
+            url = tempCanvas.toDataURL('image/png');
+        }
+        if (!url) {
+            alert("No se pudo obtener la imagen.");
+            return;
+        }
+        const link = document.createElement('a');
+        const textoValor = textoInput.value.trim() || "codigo_qr";
+        const nombreArchivo = `QR_Salon_${textoValor.replace(/[^a-z0-9]/gi, '_').substring(0, 40)}.png`;
+        link.download = nombreArchivo;
+        link.href = url;
+        link.click();
+    }
+    
+    // ---------- CÁMARA MEJORADA (SOLUCIÓN PARA MÓVIL) ----------
+    async function iniciarCamaraConModo(modo) {
+        // Detener cualquier cámara previa
+        if (html5QrCode && isScanning) {
+            await detenerCamaraInterno();
+        }
+        
+        const readerDiv = document.getElementById('reader');
+        readerDiv.innerHTML = "";
+        
+        // Verificar soporte
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            lecturaResultado.innerHTML = "❌ Navegador no soporta cámara. Usa la opción de subir imagen.";
+            return;
+        }
+        
+        try {
+            // Probar permisos primero (opcional)
+            const testStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            testStream.getTracks().forEach(track => track.stop());
+        } catch (permError) {
+            let msg = "Permiso denegado o no hay cámara.";
+            if (permError.name === "NotAllowedError") msg = "🔴 Permiso denegado. Ve a configuración del navegador y permite la cámara, luego recarga.";
+            lecturaResultado.innerHTML = msg;
+            return;
+        }
+        
+        try {
+            html5QrCode = new Html5Qrcode("reader");
+            const config = {
+                fps: 12,
+                qrbox: { width: 280, height: 280 },
+                aspectRatio: 1.0,
+                showTorchButtonIfSupported: true,
+                rememberLastUsedCamera: true
+            };
+            
+            // Usar el modo seleccionado: environment (trasera) o user (frontal)
+            const cameraId = { facingMode: modo };
+            await html5QrCode.start(cameraId, config, onScanSuccess, onScanFailure);
+            isScanning = true;
+            lecturaResultado.innerHTML = `📷 Cámara ${modo === 'environment' ? 'TRASERA' : 'FRONTAL'} activa. Apunta al QR...`;
+        } catch (err) {
+            console.error("Error iniciando cámara:", err);
+            let errorMsg = "";
+            if (err.toString().includes("NotAllowedError")) errorMsg = "Permiso de cámara denegado. Revisa ajustes.";
+            else if (err.toString().includes("NotFoundError")) errorMsg = "No se encontró la cámara solicitada.";
+            else errorMsg = `Error: ${err.message || err}`;
+            lecturaResultado.innerHTML = `❌ ${errorMsg}. Intenta con otra cámara o usa imagen.`;
+            isScanning = false;
+            html5QrCode = null;
+        }
+    }
+    
+    // Función auxiliar para detener internamente
+    async function detenerCamaraInterno() {
+        if (html5QrCode && isScanning) {
+            try {
+                await html5QrCode.stop();
+            } catch(e) {}
+            isScanning = false;
+            html5QrCode = null;
+        }
+        const readerDiv = document.getElementById('reader');
+        if (readerDiv && readerDiv.innerHTML.trim() === "") {
+            readerDiv.innerHTML = '<div style="padding: 35px 10px; text-align:center; background:#eef2f7; border-radius:24px;">📷 Cámara detenida<br><span style="font-size:0.8rem;">Presiona "Iniciar cámara"</span></div>';
+        }
+    }
+    
+    function onScanSuccess(decodedText) {
+        if (decodedText && decodedText.trim() !== "") {
+            const textoLimpio = decodedText.trim();
+            lecturaResultado.innerHTML = `<span style="font-weight:600;">✅ ${textoLimpio}</span><br><small>Escaneado: ${new Date().toLocaleTimeString()}</small>`;
+            // Agregar al historial de salones
+            addToHistory(textoLimpio);
+            // Vibración si soporta
+            if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(100);
+        }
+    }
+    
+    function onScanFailure(error) {
+        // Silencioso para no saturar
+        // No hacemos nada, solo para debug opcional
+    }
+    
+    async function detenerCamara() {
+        await detenerCamaraInterno();
+        lecturaResultado.innerHTML = (lecturaResultado.innerHTML || "") + "<br><small>🔴 Cámara detenida</small>";
+    }
+    
+    // Cambiar modo de cámara y reiniciar
+    function setCameraMode(mode) {
+        currentCameraMode = mode;
+        if (isScanning) {
+            // Si ya está activa, la reiniciamos con el nuevo modo
+            iniciarCamaraConModo(currentCameraMode);
+        }
+        // Actualizar estilo de botones
+        if (mode === 'environment') {
+            camRearBtn.classList.add('active');
+            camFrontBtn.classList.remove('active');
+        } else {
+            camFrontBtn.classList.add('active');
+            camRearBtn.classList.remove('active');
+        }
+    }
+    
+    // ---------- LEER QR DESDE ARCHIVO ----------
+    async function leerQRDesdeArchivo(file) {
+        if (!file) return;
+        lecturaResultado.innerHTML = "⏳ Procesando imagen...";
+        try {
+            // Detener cámara si está activa para evitar conflictos
+            if (isScanning) await detenerCamaraInterno();
+            
+            const tempScanner = new Html5Qrcode("reader");
+            const result = await tempScanner.scanFile(file, false);
+            if (result && result.trim()) {
+                lecturaResultado.innerHTML = `<span style="font-weight:600;">✅ ${result}</span><br><small>Leído desde imagen: ${file.name}</small>`;
+                addToHistory(result);
+                if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(100);
+            } else {
+                lecturaResultado.innerHTML = "⚠️ No se encontró código QR en la imagen.";
+            }
+            await tempScanner.clear();
+            document.getElementById('reader').innerHTML = '<div style="padding: 35px 10px; text-align:center; background:#eef2f7; border-radius:24px;">📷 Imagen procesada<br><span style="font-size:0.8rem;">Puedes iniciar cámara nuevamente</span></div>';
+        } catch (error) {
+            console.error(error);
+            if (error && error.toString().includes("No QR code found")) {
+                lecturaResultado.innerHTML = "❌ No se encontró código QR en la imagen seleccionada.";
+            } else {
+                lecturaResultado.innerHTML = `❌ Error al leer: ${error.message || "intenta con otra imagen"}`;
+            }
+        }
+    }
+    
+    // ---------- INICIALIZACIÓN Y EVENTOS ----------
+    function init() {
+        loadHistory();
+        generarQR(textoInput.value);
+        
+        btnGenerar.addEventListener('click', () => {
+            const nuevo = textoInput.value.trim();
+            if (nuevo === "") { alert("Escribe un texto."); return; }
+            generarQR(nuevo);
+        });
+        btnDescargar.addEventListener('click', descargarQR);
+        btnIniciarCamara.addEventListener('click', () => {
+            iniciarCamaraConModo(currentCameraMode);
+        });
+        btnDetenerCamara.addEventListener('click', detenerCamara);
+        
+        // Botones de selección de cámara
+        camRearBtn.addEventListener('click', () => setCameraMode('environment'));
+        camFrontBtn.addEventListener('click', () => setCameraMode('user'));
+        
+        // Subida de archivo
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                leerQRDesdeArchivo(file);
+            }
+            fileInput.value = '';
+        });
+        
+        clearHistoryBtn.addEventListener('click', clearHistory);
+        
+        // Mostrar mensaje inicial en el div de cámara
+        const readerDiv = document.getElementById('reader');
+        if (readerDiv) {
+            readerDiv.innerHTML = '<div style="padding: 35px 10px; text-align:center; background:#eef2f7; border-radius:24px;">📷 Cámara lista<br><span style="font-size:0.7rem;">Selecciona trasera/frontal e inicia</span></div>';
+        }
+        
+        // Advertencia si no es HTTPS/localhost
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            const warnDiv = document.createElement('div');
+            warnDiv.className = 'small-note';
+            warnDiv.style.background = '#ffe6e6';
+            warnDiv.style.padding = '8px';
+            warnDiv.style.borderRadius = '20px';
+            warnDiv.style.marginTop = '10px';
+            warnDiv.innerHTML = '⚠️ HTTP detectado. En móvil, la cámara requiere HTTPS. Usa la opción "Subir imagen" o despliega en un servidor seguro.';
+            document.querySelector('.qr-reader').appendChild(warnDiv);
+        }
+    }
+    
+    window.addEventListener('DOMContentLoaded', init);
+    window.addEventListener('beforeunload', () => {
+        if (html5QrCode && isScanning) html5QrCode.stop().catch(()=>{});
+    });
+</script>
+</body>
+</html>
